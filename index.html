@@ -46,7 +46,7 @@
             display: block;
         }
 
-        /* Fixed Matrix Grid Implementation */
+        /* Matrix Styles */
         .clpm-grid-row {
             display: grid;
             grid-template-columns: 35px repeat(13, 1fr);
@@ -77,6 +77,15 @@
             z-index: 30;
         }
 
+        /* Spinner Animation */
+        @keyframes spin-slow {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spin-slow 1s linear infinite;
+        }
+
         /* Custom scrollbar */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f8fafc; }
@@ -87,11 +96,19 @@
     <script>
         function dashboardApp() {
             return {
-                currentScale: 'base',
+                currentScale: 'base', // base or large
                 currentMetric: 'curvature', 
                 noiseLevel: 10,
                 pitchShift: 0,
                 
+                // Loading state for plots
+                loading: {
+                    curvature: true,
+                    entropy: true,
+                    invariance: true,
+                    clpmAnalysis: true
+                },
+
                 // Audio Matrix State
                 audioIndex: 0, 
                 playingCell: null, 
@@ -116,6 +133,19 @@
                     });
                 },
 
+                setScale(scale) {
+                    if (this.currentScale === scale) return;
+                    this.currentScale = scale;
+                    // Reset loading states when scale changes as it forces iframe reload
+                    this.loading.curvature = true;
+                    this.loading.entropy = true;
+                    this.loading.invariance = true;
+                },
+
+                setMetric(metricId) {
+                    this.currentMetric = metricId;
+                },
+
                 playCLPM(i, j) {
                     const filePath = `CLPM-audio/${i}/${i}_${j}_${this.audioIndex}_rec.wav`;
                     
@@ -127,7 +157,7 @@
 
                     this.audioPlayer.src = filePath;
                     this.audioPlayer.play().catch(e => {
-                        console.warn("Audio file check:", filePath);
+                        console.warn("Audio file missing or blocked:", filePath);
                         this.playingCell = null;
                     });
                     this.playingCell = { i, j };
@@ -142,15 +172,18 @@
                     const x = Array.from({length: points}, (_, i) => i);
                     const freq = 0.05 + (this.pitchShift / 1000);
                     const noise = this.noiseLevel / 100;
+                    
                     const original = x.map(v => (Math.sin(v * 0.01) * 0.5 + 0.5) * Math.sin(v * 0.1));
                     const perturbed = x.map((v, i) => {
                         const env = Math.sin(v * 0.01) * 0.5 + 0.5;
                         return (env * Math.sin(v * (0.1 + freq))) + (Math.random() - 0.5) * noise * 2;
                     });
+
                     const data = [
                         { x: x, y: original, name: 'Original', line: {color: '#cbd5e1', width: 1}, opacity: 0.5, type: 'scatter' },
                         { x: x, y: perturbed, name: 'Perturbed', line: {color: '#0891b2', width: 2}, type: 'scatter' }
                     ];
+
                     const layout = {
                         paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
                         showlegend: true, legend: { font: { color: '#64748b' }, orientation: 'h', y: 1.2 },
@@ -158,6 +191,7 @@
                         xaxis: { showgrid: false, tickfont: {color: '#94a3b8'} },
                         yaxis: { showgrid: true, gridcolor: '#f1f5f9', tickfont: {color: '#94a3b8'}, range: [-1.5, 1.5] }
                     };
+
                     const plotEl = document.getElementById('plotlySignal');
                     if (plotEl) Plotly.newPlot(plotEl, data, layout, {responsive: true, displayModeBar: false});
                 },
@@ -179,20 +213,20 @@
             </div>
             <span class="font-bold text-xl tracking-tight text-slate-900">AudioSSL <span class="text-slate-400 font-normal">Explorer</span></span>
         </div>
-        <div class="hidden md:flex space-x-4 text-[13px] font-medium text-slate-500">
+        <div class="hidden md:flex space-x-6 text-[13px] font-medium text-slate-500">
             <a href="#abstract" class="hover:text-cyan-600 transition">Abstract</a>
             <a href="#metrics" class="hover:text-cyan-600 transition">Metrics</a>
             <a href="#impact" class="hover:text-cyan-600 transition">Training</a>
             <a href="#clpm-analysis" class="hover:text-cyan-600 transition">CLPM Analysis</a>
             <a href="#clpm-audio" class="hover:text-cyan-600 transition">Audio Matrix</a>
         </div>
-        <a href="#" class="bg-slate-900 text-white px-4 py-1.5 rounded-full text-xs font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10">PDF</a>
+        <a href="#" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10">Full Paper</a>
     </nav>
 
     <!-- Hero -->
     <section class="pt-32 pb-12 px-6 max-w-7xl mx-auto text-center">
         <div class="inline-block px-3 py-1 rounded-full border border-slate-200 text-[10px] font-mono text-cyan-600 mb-6 bg-slate-50 uppercase tracking-widest font-bold">
-            Interactive Scientific Showcase
+            Scientific Insights Dashboard
         </div>
         <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-slate-900">
             Dynamics of <span class="gradient-text">SSL Audio</span> Models
@@ -214,7 +248,7 @@
             </p>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-8 rounded-3xl flex flex-col justify-center">
-            <h2 class="text-lg font-bold mb-3 text-slate-900">Quick Summary</h2>
+            <h2 class="text-lg font-bold mb-3 text-slate-900 text-sm uppercase tracking-wider">Key Findings</h2>
             <ul class="space-y-3 text-xs text-slate-500">
                 <li class="flex gap-2">
                     <span class="text-cyan-600 font-bold">1.</span>
@@ -236,22 +270,24 @@
                 <p class="text-slate-500 text-sm font-medium">Toggle perspectives to explore interactive results from our standalone Plotly exports.</p>
             </div>
             <div class="flex flex-col md:flex-row gap-6 w-full lg:w-auto">
+                <!-- Metric Selectors -->
                 <div class="space-y-2">
                     <span class="text-[10px] uppercase font-bold text-slate-400 ml-1 tracking-widest">Analytical Lens</span>
                     <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
                         <template x-for="m in metrics" :key="m.id">
-                            <button @click="currentMetric = m.id" :class="currentMetric === m.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 capitalize">
+                            <button @click="setMetric(m.id)" :class="currentMetric === m.id ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 capitalize">
                                 <i :data-lucide="m.icon" class="w-3.5 h-3.5" :style="'color:' + (currentMetric === m.id ? m.color : '#94a3b8')"></i>
                                 <span x-text="m.name"></span>
                             </button>
                         </template>
                     </div>
                 </div>
+                <!-- Scale Selector -->
                 <div class="space-y-2">
                     <span class="text-[10px] uppercase font-bold text-slate-400 ml-1 tracking-widest">Model Size</span>
                     <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
-                        <button @click="currentScale = 'base'" :class="currentScale === 'base' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-500'" class="px-6 py-2 rounded-xl text-xs font-bold transition-all">Base</button>
-                        <button @click="currentScale = 'large'" :class="currentScale === 'large' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-500'" class="px-6 py-2 rounded-xl text-xs font-bold transition-all ml-1">Large</button>
+                        <button @click="setScale('base')" :class="currentScale === 'base' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-500'" class="px-6 py-2 rounded-xl text-xs font-bold transition-all">Base</button>
+                        <button @click="setScale('large')" :class="currentScale === 'large' ? 'bg-white text-cyan-600 shadow-sm' : 'text-slate-500'" class="px-6 py-2 rounded-xl text-xs font-bold transition-all ml-1">Large</button>
                     </div>
                 </div>
             </div>
@@ -259,21 +295,32 @@
 
         <div class="card-shadow p-8 rounded-[3rem] bg-white relative overflow-hidden transition-all duration-500">
             <div class="absolute -top-32 -right-32 w-96 h-96 blur-[150px] rounded-full transition-all duration-1000" :class="{'bg-cyan-500/10': currentMetric === 'entropy', 'bg-green-500/10': currentMetric === 'curvature', 'bg-pink-500/10': currentMetric === 'invariance'}"></div>
+            
             <div class="chart-container-large relative z-10 bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden">
+                
+                <!-- LOADING SPINNER Overlay -->
+                <div x-show="loading[currentMetric]" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm transition-opacity duration-300">
+                    <div class="w-10 h-10 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
+                    <p class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading interactive plot...</p>
+                </div>
+
+                <!-- CURVATURE -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'curvature' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
-                    <iframe :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" class="plotly-iframe" title="Curvature Plot"></iframe>
+                    <iframe :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" @load="loading.curvature = false" class="plotly-iframe" title="Curvature Plot"></iframe>
                 </div>
+                <!-- ENTROPY -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'entropy' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
-                    <iframe :src="currentScale === 'large' ? 'large_entropy_interactive.html' : 'entropy_interactive.html'" class="plotly-iframe" title="Entropy Plot"></iframe>
+                    <iframe :src="currentScale === 'large' ? 'large_entropy_interactive.html' : 'entropy_interactive.html'" @load="loading.entropy = false" class="plotly-iframe" title="Entropy Plot"></iframe>
                 </div>
+                <!-- INVARIANCE -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'invariance' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
-                    <iframe :src="currentScale === 'large' ? 'large_invariance_interactive.html' : 'invariance_interactive.html'" class="plotly-iframe" title="Invariance Plot"></iframe>
+                    <iframe :src="currentScale === 'large' ? 'large_invariance_interactive.html' : 'invariance_interactive.html'" @load="loading.invariance = false" class="plotly-iframe" title="Invariance Plot"></iframe>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Training Dynamics Section -->
+    <!-- HuBERT Training Dynamics Section -->
     <section id="impact" class="py-12 px-6 max-w-7xl mx-auto">
         <div class="mb-10 text-center sm:text-left">
             <h2 class="text-3xl font-bold mb-4 text-slate-900 italic tracking-tight uppercase leading-none">Training Dynamics &<br>Geometric Relaxation</h2>
@@ -296,7 +343,7 @@
             </div>
             <div class="lg:col-span-2 card-shadow rounded-[3rem] bg-white overflow-hidden p-4">
                 <div class="flex items-center justify-between mb-4 px-4 pt-2">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Figure 6: HuBERT Training Curvature</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-widest uppercase tracking-tighter">HuBERT Curvature Evolution</span>
                 </div>
                 <div class="chart-container-large relative bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden" style="height: 550px;">
                     <iframe src="curvature_steps_smooth_colors.html" class="plotly-iframe" title="Geometric Relaxation"></iframe>
@@ -305,44 +352,39 @@
         </div>
     </section>
 
-    <!-- CLPM Multi-Objective Analysis (Restored Section) -->
+    <!-- CLPM Multi-Objective Analysis (4 Matrices) -->
     <section id="clpm-analysis" class="py-20 px-6 max-w-7xl mx-auto bg-slate-50 rounded-[3rem] my-12 border border-slate-200 overflow-hidden relative">
         <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-600/5 blur-[100px] rounded-full"></div>
-        
         <div class="mb-12 text-center">
             <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM: Multi-Objective Analysis</h2>
-            <p class="text-slate-500 font-medium max-w-2xl mx-auto">
-                Cross-Layer Performance Matrix for **Wav2Vec2**, evaluating how representations from training layer <em>i</em> transfer to evaluation layer <em>j</em> across four distinct dimensions.
-            </p>
+            <p class="text-slate-500 font-medium max-w-2xl mx-auto">Cross-Layer Performance Matrix for **Wav2Vec2**, evaluating how representations transfer across four distinct dimensions.</p>
         </div>
-
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
             <div class="lg:col-span-1 space-y-4">
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-cyan-500">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">1. Phonetic Consistency</h4>
-                    <p class="text-xs text-slate-500">High stability observed in phoneme preservation across middle layers (4-9).</p>
+                    <p class="text-xs text-slate-500 text-slate-600">Stability observed in phoneme preservation across middle layers (4-9).</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-pink-500">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">2. Identity Volatility</h4>
-                    <p class="text-xs text-slate-500">Speaker identity shows high volatility, often being pruned in late-stage layers.</p>
+                    <p class="text-xs text-slate-500 text-slate-600">Speaker identity shows high volatility, often pruned in late-stage layers.</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Features</h4>
-                    <p class="text-xs text-slate-500">Pitch and energy transfer effectively between early and mid-range depths.</p>
+                    <p class="text-xs text-slate-500 text-slate-600">Pitch and energy transfer effectively between early and mid-range depths.</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">4. Semantic Rupture</h4>
-                    <p class="text-xs text-slate-500">Wav2Vec2 displays a sharp "functional rupture" near layer 11 for global semantic tasks.</p>
+                    <p class="text-xs text-slate-500 text-slate-600">Sharp "functional rupture" near layer 11 for global semantic tasks.</p>
                 </div>
             </div>
-
-            <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2 min-h-[850px]">
-                <div class="flex items-center justify-between px-6 pt-4 mb-2">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-widest">Wav2Vec2 Layer Transfers</span>
-                    <span class="text-[9px] font-bold text-slate-400">4-MATRIX PERSPECTIVE</span>
-                </div>
-                <div class="w-full h-[800px] rounded-[2.5rem] overflow-hidden">
-                    <iframe src="cross_layer_evaluation.html" class="plotly-iframe" title="Wav2Vec2 CLPM Analysis"></iframe>
+            <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2 min-h-[600px]">
+                <div class="w-full h-[560px] rounded-[2.5rem] overflow-hidden relative">
+                    <!-- LOADING SPINNER for CLPM Analysis -->
+                    <div x-show="loading.clpmAnalysis" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
+                        <div class="w-10 h-10 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
+                    </div>
+                    <iframe src="cross_layer_evaluation.html" @load="loading.clpmAnalysis = false" class="plotly-iframe" title="CLPM Analysis"></iframe>
                 </div>
             </div>
         </div>
@@ -353,9 +395,7 @@
         <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
             <div class="max-w-xl">
                 <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM Matrix: Audio Explorer</h2>
-                <p class="text-slate-500 font-medium text-sm">
-                    Listen to representations decoded from different layers. Training layer <em>i</em> (rows) decodes evaluation layer <em>j</em> (columns).
-                </p>
+                <p class="text-slate-500 font-medium text-sm">Listen to decoded representations. Training layer <em>i</em> (rows) decodes eval layer <em>j</em> (cols).</p>
             </div>
             <div class="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-sm z-20">
                 <button @click="audioIndex = 0" :class="audioIndex === 0 ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-500'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Example 0</button>
@@ -375,16 +415,15 @@
                             </div>
                             <div class="flex gap-1.5 items-center justify-center h-10">
                                 <div class="w-1.5 bg-cyan-400 h-6 rounded-full animate-bounce"></div>
-                                <div class="w-1.5 bg-cyan-500 h-10 rounded-full animate-pulse"></div>
-                                <div class="w-1.5 bg-cyan-600 h-8 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
-                                <div class="w-1.5 bg-cyan-500 h-4 rounded-full animate-pulse"></div>
+                                <div class="w-1.5 bg-cyan-500 h-10 rounded-full"></div>
+                                <div class="w-1.5 bg-cyan-600 h-8 rounded-full animate-bounce"></div>
                             </div>
                         </div>
                     </template>
                     <template x-if="!playingCell">
-                        <div class="text-center py-4">
-                            <i data-lucide="music" class="w-8 h-8 text-slate-200 mx-auto mb-2"></i>
-                            <p class="text-[11px] text-slate-400">Select a cell</p>
+                        <div class="text-center py-4 opacity-30">
+                            <i data-lucide="music" class="w-8 h-8 mx-auto mb-2"></i>
+                            <p class="text-[11px]">Select a cell</p>
                         </div>
                     </template>
                 </div>
@@ -392,13 +431,14 @@
 
             <div class="lg:col-span-9 card-shadow rounded-[3rem] bg-white p-8 lg:p-12 overflow-x-auto">
                 <div class="min-w-[650px] mx-auto">
+                    <!-- Column Header -->
                     <div class="clpm-grid-row mb-3">
                         <div class=""></div>
                         <template x-for="j in 13" :key="j-1">
                             <div class="text-[10px] font-black text-slate-300 text-center" x-text="j-1"></div>
                         </template>
                     </div>
-
+                    <!-- Matrix Content -->
                     <div class="flex flex-col gap-1.5">
                         <template x-for="i in 13" :key="i-1">
                             <div class="clpm-grid-row">
@@ -416,18 +456,6 @@
                             </div>
                         </template>
                     </div>
-
-                    <div class="mt-10 flex justify-between items-center px-4 pt-6 border-t border-slate-50">
-                        <div class="flex gap-6">
-                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                <span class="w-3 h-3 bg-slate-200 rounded-sm"></span> Diagonal
-                            </div>
-                            <div class="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-tighter">
-                                <span class="w-3 h-3 bg-cyan-600 rounded-sm shadow-sm"></span> Active
-                            </div>
-                        </div>
-                        <div class="text-[9px] font-mono text-slate-300 uppercase tracking-widest">Y: Train (i) | X: Eval (j)</div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -439,8 +467,6 @@
             Audio SSL Dynamics Explorer © 2026
         </div>
     </footer>
-
-    <section id="signal"></section> <!-- Placeholder to maintain IDs from JS if needed -->
 
 </body>
 </html>
