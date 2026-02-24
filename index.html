@@ -135,14 +135,23 @@
 
                 setScale(scale) {
                     if (this.currentScale === scale) return;
-                    this.currentScale = scale;
-                    // Reset loading states when scale changes as it forces iframe reload
+                    // Reset all loading states because iframe srcs change and will trigger @load
                     this.loading.curvature = true;
                     this.loading.entropy = true;
                     this.loading.invariance = true;
+                    this.currentScale = scale;
                 },
 
                 setMetric(metricId) {
+                    if (this.currentMetric === metricId) return;
+                    
+                    // Si l'iframe est déjà chargée (pas en train de charger suite à un changement de scale)
+                    // On simule un petit chargement visuel de 500ms pour la transition
+                    if (!this.loading[metricId]) {
+                        this.loading[metricId] = true;
+                        setTimeout(() => { this.loading[metricId] = false; }, 500);
+                    }
+                    
                     this.currentMetric = metricId;
                 },
 
@@ -298,10 +307,13 @@
             
             <div class="chart-container-large relative z-10 bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden">
                 
-                <!-- LOADING SPINNER Overlay -->
-                <div x-show="loading[currentMetric]" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm transition-opacity duration-300">
-                    <div class="w-10 h-10 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
-                    <p class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading interactive plot...</p>
+                <!-- LOADING SPINNER Overlay for Main Metrics -->
+                <div x-show="loading[currentMetric]" 
+                     x-transition:enter="transition opacity duration-200" 
+                     x-transition:leave="transition opacity duration-300"
+                     class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+                    <div class="w-12 h-12 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
+                    <p class="mt-4 text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em]">Updating Visualization...</p>
                 </div>
 
                 <!-- CURVATURE -->
@@ -379,10 +391,13 @@
                 </div>
             </div>
             <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2 min-h-[600px]">
-                <div class="w-full h-[560px] rounded-[2.5rem] overflow-hidden relative">
+                <div class="w-full h-[560px] rounded-[2.5rem] overflow-hidden relative border border-slate-50 bg-slate-50/10">
                     <!-- LOADING SPINNER for CLPM Analysis -->
-                    <div x-show="loading.clpmAnalysis" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
+                    <div x-show="loading.clpmAnalysis" 
+                         x-transition:leave="transition opacity duration-300"
+                         class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
                         <div class="w-10 h-10 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
+                        <p class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading Matrices...</p>
                     </div>
                     <iframe src="cross_layer_evaluation.html" @load="loading.clpmAnalysis = false" class="plotly-iframe" title="CLPM Analysis"></iframe>
                 </div>
