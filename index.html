@@ -207,6 +207,17 @@
 
                 calculateDistortion() {
                     return Math.min(100, Math.round((parseInt(this.noiseLevel) + Math.abs(parseInt(this.pitchShift)) * 2)));
+                },
+
+                copyCitation() {
+                    const bib = document.getElementById('bibtex-code').innerText;
+                    const textarea = document.createElement('textarea');
+                    textarea.value = bib;
+                    document.body.appendChild(textarea);
+                    textarea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textarea);
+                    // Simple logic to show feedback could be added here
                 }
             };
         }
@@ -226,8 +237,9 @@
             <a href="#abstract" class="hover:text-cyan-600 transition">Abstract</a>
             <a href="#metrics" class="hover:text-cyan-600 transition">Metrics</a>
             <a href="#impact" class="hover:text-cyan-600 transition">Training</a>
-            <a href="#clpm-analysis" class="hover:text-cyan-600 transition">CLPM Analysis</a>
-            <a href="#clpm-audio" class="hover:text-cyan-600 transition">Audio Matrix</a>
+            <a href="#clpm-analysis" class="hover:text-cyan-600 transition">CLPM</a>
+            <a href="#code-section" class="hover:text-cyan-600 transition">Code</a>
+            <a href="#cite-section" class="hover:text-cyan-600 transition">Cite</a>
         </div>
         <a href="#" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10">Full Paper</a>
     </nav>
@@ -407,7 +419,7 @@
 
     <!-- CLPM Audio Matrix Explorer -->
     <section id="clpm-audio" class="py-20 px-6 max-w-7xl mx-auto bg-white rounded-[4rem] my-12 border border-slate-200 overflow-hidden relative">
-        <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
+        <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 text-center lg:text-left">
             <div class="max-w-xl">
                 <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM Matrix: Audio Explorer</h2>
                 <p class="text-slate-500 font-medium text-sm">Listen to decoded representations. Training layer <em>i</em> (rows) decodes eval layer <em>j</em> (cols).</p>
@@ -471,6 +483,50 @@
                             </div>
                         </template>
                     </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Section -->
+    <section id="code-section" class="py-20 px-6 max-w-7xl mx-auto">
+        <div class="card-shadow rounded-[3rem] p-12 bg-slate-900 text-white relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full"></div>
+            <div class="max-w-2xl relative z-10">
+                <h2 class="text-4xl font-black mb-6 italic tracking-tighter uppercase leading-none">Open Source Code</h2>
+                <p class="text-slate-400 font-medium mb-8 leading-relaxed">
+                    The complete implementation of our analysis framework, including scripts for entropy calculation, curvature measurement, and the generative decoding for CLPM, is available on GitHub.
+                </p>
+                <a href="#" class="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-colors duration-300 group">
+                    <i data-lucide="github" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                    Access Repository
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Citation Section -->
+    <section id="cite-section" class="py-20 px-6 max-w-7xl mx-auto border-t border-slate-100">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+            <div class="lg:col-span-4">
+                <h2 class="text-3xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase">Cite This Work</h2>
+                <p class="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
+                    If you find our results or the analytical framework useful in your research, please cite our paper.
+                </p>
+                <button @click="copyCitation()" class="flex items-center gap-2 text-cyan-600 text-xs font-bold hover:text-cyan-700 transition-colors uppercase tracking-widest">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i>
+                    Copy BibTeX
+                </button>
+            </div>
+            <div class="lg:col-span-8">
+                <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 overflow-x-auto">
+                    <pre id="bibtex-code" class="text-[13px] font-mono text-slate-600 leading-relaxed">@inproceedings{understanding_ssl_audio_2026,
+  title={Understanding SSL Audio Models: Compression, Geometry and Invariance},
+  author={Anonymous Authors}
+  <!-- booktitle={Proceedings of Interspeech 2026},
+  year={2026},
+  publisher={ISCA} -->
+}</pre>
                 </div>
             </div>
         </div>
