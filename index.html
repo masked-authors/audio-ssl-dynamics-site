@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSL Audio Model Dynamics</title>
+    <title>CoGeR: SSL Audio Model Dynamics</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -96,7 +96,7 @@
     <script>
         function dashboardApp() {
             return {
-                currentScale: 'base', // base or large
+                currentScale: '', // Start empty to trigger initial load in init()
                 currentMetric: 'curvature', 
                 noiseLevel: 10,
                 pitchShift: 0,
@@ -126,6 +126,8 @@
                         this.initPlotly();
                         this.audioPlayer = new Audio();
                         this.audioPlayer.onended = () => { this.playingCell = null; };
+                        // Force first load of plots
+                        this.currentScale = 'base';
                     });
 
                     this.$watch('currentMetric', () => {
@@ -135,38 +137,33 @@
 
                 setScale(scale) {
                     if (this.currentScale === scale) return;
-                    // Reset all loading states because iframe srcs change and will trigger @load
-                    this.loading.curvature = true;
-                    this.loading.entropy = true;
-                    this.loading.invariance = true;
+                    // Reset all loading states because iframe srcs change
+                    Object.keys(this.loading).forEach(k => {
+                        if(k !== 'clpmAnalysis') this.loading[k] = true;
+                    });
                     this.currentScale = scale;
                 },
 
                 setMetric(metricId) {
                     if (this.currentMetric === metricId) return;
-                    
-                    // Si l'iframe est déjà chargée (pas en train de charger suite à un changement de scale)
-                    // On simule un petit chargement visuel de 500ms pour la transition
+                    // Trigger a brief visual loading state for the switch if it's already "loaded" in the current scale
                     if (!this.loading[metricId]) {
                         this.loading[metricId] = true;
-                        setTimeout(() => { this.loading[metricId] = false; }, 500);
+                        setTimeout(() => { this.loading[metricId] = false; }, 400);
                     }
-                    
                     this.currentMetric = metricId;
                 },
 
                 playCLPM(i, j) {
                     const filePath = `CLPM-audio/${i}/${i}_${j}_${this.audioIndex}_rec.wav`;
-                    
                     if (this.playingCell && this.playingCell.i === i && this.playingCell.j === j) {
                         this.audioPlayer.pause();
                         this.playingCell = null;
                         return;
                     }
-
                     this.audioPlayer.src = filePath;
                     this.audioPlayer.play().catch(e => {
-                        console.warn("Audio file missing or blocked:", filePath);
+                        console.warn("Audio file missing:", filePath);
                         this.playingCell = null;
                     });
                     this.playingCell = { i, j };
@@ -181,18 +178,15 @@
                     const x = Array.from({length: points}, (_, i) => i);
                     const freq = 0.05 + (this.pitchShift / 1000);
                     const noise = this.noiseLevel / 100;
-                    
                     const original = x.map(v => (Math.sin(v * 0.01) * 0.5 + 0.5) * Math.sin(v * 0.1));
                     const perturbed = x.map((v, i) => {
                         const env = Math.sin(v * 0.01) * 0.5 + 0.5;
                         return (env * Math.sin(v * (0.1 + freq))) + (Math.random() - 0.5) * noise * 2;
                     });
-
                     const data = [
                         { x: x, y: original, name: 'Original', line: {color: '#cbd5e1', width: 1}, opacity: 0.5, type: 'scatter' },
                         { x: x, y: perturbed, name: 'Perturbed', line: {color: '#0891b2', width: 2}, type: 'scatter' }
                     ];
-
                     const layout = {
                         paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
                         showlegend: true, legend: { font: { color: '#64748b' }, orientation: 'h', y: 1.2 },
@@ -200,7 +194,6 @@
                         xaxis: { showgrid: false, tickfont: {color: '#94a3b8'} },
                         yaxis: { showgrid: true, gridcolor: '#f1f5f9', tickfont: {color: '#94a3b8'}, range: [-1.5, 1.5] }
                     };
-
                     const plotEl = document.getElementById('plotlySignal');
                     if (plotEl) Plotly.newPlot(plotEl, data, layout, {responsive: true, displayModeBar: false});
                 },
@@ -217,7 +210,6 @@
                     textarea.select();
                     document.execCommand('copy');
                     document.body.removeChild(textarea);
-                    // Simple logic to show feedback could be added here
                 }
             };
         }
@@ -231,13 +223,14 @@
             <div class="w-8 h-8 bg-cyan-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
                 <i data-lucide="waves" class="text-white w-5 h-5"></i>
             </div>
-            <span class="font-bold text-xl tracking-tight text-slate-900">AudioSSL <span class="text-slate-400 font-normal">Explorer</span></span>
+            <span class="font-bold text-xl tracking-tight text-slate-900">CoGeR <span class="text-slate-400 font-normal">Explorer</span></span>
         </div>
         <div class="hidden md:flex space-x-6 text-[13px] font-medium text-slate-500">
             <a href="#abstract" class="hover:text-cyan-600 transition">Abstract</a>
             <a href="#metrics" class="hover:text-cyan-600 transition">Metrics</a>
             <a href="#impact" class="hover:text-cyan-600 transition">Training</a>
             <a href="#clpm-analysis" class="hover:text-cyan-600 transition">CLPM</a>
+            <a href="#clpm-audio" class="hover:text-cyan-600 transition">Audio Matrix</a>
             <a href="#code-section" class="hover:text-cyan-600 transition">Code</a>
             <a href="#cite-section" class="hover:text-cyan-600 transition">Cite</a>
         </div>
@@ -249,49 +242,56 @@
         <div class="inline-block px-3 py-1 rounded-full border border-slate-200 text-[10px] font-mono text-cyan-600 mb-6 bg-slate-50 uppercase tracking-widest font-bold">
             Scientific Insights Dashboard
         </div>
-        <h1 class="text-4xl md:text-6xl font-extrabold mb-6 leading-tight text-slate-900">
-            Dynamics of <span class="gradient-text">SSL Audio</span> Models
+        <h1 class="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900 max-w-5xl mx-auto">
+            <span class="gradient-text">CoGeR:</span> Compression, Geometry and Robustness to Understand Self-Supervised Speech Representations
         </h1>
-        <p class="text-slate-500 text-lg md:text-xl max-w-3xl mx-auto leading-relaxed">
-            Investigating layer-wise information compression, geometric manifolds, and discriminative invariance.
+        <p class="text-slate-500 text-lg md:text-xl max-w-4xl mx-auto leading-relaxed">
+            A task-agnostic framework for analyzing internal layer-wise dynamics of self-supervised Transformers.
         </p>
     </section>
 
     <!-- Abstract -->
-    <section id="abstract" class="py-12 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <section id="abstract" class="py-12 px-6 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-8 border-b border-slate-100 pb-20">
         <div class="lg:col-span-2 card-shadow p-8 rounded-3xl">
             <h2 class="text-xl font-bold mb-4 flex items-center gap-2 text-slate-900">
                 <i data-lucide="book-open" class="text-cyan-600 w-5 h-5"></i>
-                Abstract
+                Scientific Abstract
             </h2>
             <p class="text-slate-600 leading-relaxed text-sm italic">
-                "Self-supervised learning models like Wav2Vec2, HuBERT, and WavLM learn rich speech representations, yet their internal layer-wise dynamics remain unclear. We analyze these models through three perspectives: entropy, curvature, and invariance. Our study reveals patterns of compression and late-layer sensitivity shifts."
+                Self-supervised learning (SSL) models, such as Wav2Vec2, HuBERT, and WavLM, have become foundational across a wide range of speech and audio tasks. However, despite their widespread success, fully understanding their internal layer-wise dynamics remains an ongoing challenge. To address this, we propose a three-part analysis of their representations. First, we establish a task-agnostic framework (CoGeR) analyzing the models from three intrinsic perspectives: compression (entropy), geometry (curvature), and robustness (invariance to perturbations). We show that different training objectives induce distinct regimes of acoustic compression and manifold unfolding. Second, we introduce the Cross-Layer Performance Matrix (CLPM) to evaluate functional transferability across layers, exposing stable phonetic cores, identity volatility, and deep-layer semantic pruning. Finally, linear probing connects the CoGeR metrics to downstream tasks, demonstrating how layer topology dictates phoneme, pitch, and speaker encoding.
             </p>
+            <div class="mt-6 flex items-center gap-2 text-xs font-semibold text-cyan-700">
+                <i data-lucide="link" class="w-3.5 h-3.5"></i>
+                Project page and code: <a href="https://coger.github.io/" target="_blank" class="underline hover:text-cyan-900 transition">https://coger.github.io/</a>
+            </div>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-8 rounded-3xl flex flex-col justify-center">
-            <h2 class="text-lg font-bold mb-3 text-slate-900 text-sm uppercase tracking-wider">Key Findings</h2>
-            <ul class="space-y-3 text-xs text-slate-500">
+            <h2 class="text-lg font-bold mb-3 text-slate-900 text-sm uppercase tracking-wider">Contribution Summary</h2>
+            <ul class="space-y-4 text-xs text-slate-500">
                 <li class="flex gap-2">
-                    <span class="text-cyan-600 font-bold">1.</span>
-                    <span>Models increase complexity before unfolding manifolds for separability.</span>
+                    <span class="text-cyan-600 font-bold">I.</span>
+                    <span><strong>CoGeR Framework:</strong> Task-agnostic analysis via entropy, curvature, and invariance metrics.</span>
                 </li>
                 <li class="flex gap-2">
-                    <span class="text-cyan-600 font-bold">2.</span>
-                    <span>Scaling size (Large) shifts geometric organization more than data volume.</span>
+                    <span class="text-cyan-600 font-bold">II.</span>
+                    <span><strong>Functional Transfer:</strong> Using CLPM to expose representational shifts and pruning zones.</span>
+                </li>
+                <li class="flex gap-2">
+                    <span class="text-cyan-600 font-bold">III.</span>
+                    <span><strong>Topology vs Task:</strong> Linking intrinsic geometry to specific downstream encoding capabilities.</span>
                 </li>
             </ul>
         </div>
     </section>
 
     <!-- Main Metrics Visualizer -->
-    <section id="metrics" class="py-12 px-6 max-w-7xl mx-auto">
+    <section id="metrics" class="py-20 px-6 max-w-7xl mx-auto">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-8">
             <div class="max-w-md">
                 <h2 class="text-3xl font-bold mb-2 text-slate-900 italic tracking-tight uppercase">Layer-wise Dynamics</h2>
-                <p class="text-slate-500 text-sm font-medium">Toggle perspectives to explore interactive results from our standalone Plotly exports.</p>
+                <p class="text-slate-500 text-sm font-medium">Explore intrinsic perspectives through the CoGeR framework. Select model scale to trigger data loading.</p>
             </div>
             <div class="flex flex-col md:flex-row gap-6 w-full lg:w-auto">
-                <!-- Metric Selectors -->
                 <div class="space-y-2">
                     <span class="text-[10px] uppercase font-bold text-slate-400 ml-1 tracking-widest">Analytical Lens</span>
                     <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
@@ -303,7 +303,6 @@
                         </template>
                     </div>
                 </div>
-                <!-- Scale Selector -->
                 <div class="space-y-2">
                     <span class="text-[10px] uppercase font-bold text-slate-400 ml-1 tracking-widest">Model Size</span>
                     <div class="flex bg-slate-100 p-1 rounded-2xl border border-slate-200">
@@ -314,38 +313,35 @@
             </div>
         </div>
 
-        <div class="card-shadow p-8 rounded-[3rem] bg-white relative overflow-hidden transition-all duration-500">
+        <div class="card-shadow p-8 rounded-[3rem] bg-white relative overflow-hidden transition-all duration-500 min-h-[750px]">
             <div class="absolute -top-32 -right-32 w-96 h-96 blur-[150px] rounded-full transition-all duration-1000" :class="{'bg-cyan-500/10': currentMetric === 'entropy', 'bg-green-500/10': currentMetric === 'curvature', 'bg-pink-500/10': currentMetric === 'invariance'}"></div>
             
             <div class="chart-container-large relative z-10 bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden">
-                
-                <!-- LOADING SPINNER Overlay for Main Metrics -->
+                <!-- LOADING SPINNER Overlay -->
                 <div x-show="loading[currentMetric]" 
                      x-transition:enter="transition opacity duration-200" 
-                     x-transition:leave="transition opacity duration-300"
-                     class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/70 backdrop-blur-sm">
+                     x-transition:leave="transition opacity duration-400"
+                     class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/80 backdrop-blur-sm">
                     <div class="w-12 h-12 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
-                    <p class="mt-4 text-[11px] font-bold text-slate-500 uppercase tracking-[0.2em]">Updating Visualization...</p>
+                    <p class="mt-4 text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">Processing Plotly Data...</p>
                 </div>
 
-                <!-- CURVATURE -->
+                <!-- Plotly Iframes (Catching @load reliably) -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'curvature' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
-                    <iframe :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" @load="loading.curvature = false" class="plotly-iframe" title="Curvature Plot"></iframe>
+                    <iframe x-show="currentScale !== ''" :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" @load="loading.curvature = false" class="plotly-iframe"></iframe>
                 </div>
-                <!-- ENTROPY -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'entropy' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
-                    <iframe :src="currentScale === 'large' ? 'large_entropy_interactive.html' : 'entropy_interactive.html'" @load="loading.entropy = false" class="plotly-iframe" title="Entropy Plot"></iframe>
+                    <iframe x-show="currentScale !== ''" :src="currentScale === 'large' ? 'large_entropy_interactive.html' : 'entropy_interactive.html'" @load="loading.entropy = false" class="plotly-iframe"></iframe>
                 </div>
-                <!-- INVARIANCE -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'invariance' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
-                    <iframe :src="currentScale === 'large' ? 'large_invariance_interactive.html' : 'invariance_interactive.html'" @load="loading.invariance = false" class="plotly-iframe" title="Invariance Plot"></iframe>
+                    <iframe x-show="currentScale !== ''" :src="currentScale === 'large' ? 'large_invariance_interactive.html' : 'invariance_interactive.html'" @load="loading.invariance = false" class="plotly-iframe"></iframe>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- HuBERT Training Dynamics Section -->
-    <section id="impact" class="py-12 px-6 max-w-7xl mx-auto">
+    <section id="impact" class="py-12 px-6 max-w-7xl mx-auto border-t border-slate-50 pt-20">
         <div class="mb-10 text-center sm:text-left">
             <h2 class="text-3xl font-bold mb-4 text-slate-900 italic tracking-tight uppercase leading-none">Training Dynamics &<br>Geometric Relaxation</h2>
             <p class="text-slate-500 text-sm font-medium leading-relaxed max-w-4xl">Evolution of embedding curvature during the first training iteration of a HuBERT model, from initialization to convergence.</p>
@@ -354,75 +350,69 @@
             <div class="lg:col-span-1 space-y-6 text-sm">
                 <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
                     <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3"><i data-lucide="zap" class="w-4 h-4 text-purple-600"></i>Rapid Encoding</h3>
-                    <p class="text-slate-600 leading-relaxed">Initially, optimization triggers a <strong>sharp surge</strong> (≈ 1.4), reflecting the rapid encoding of acoustic complexity.</p>
+                    <p class="text-slate-600 leading-relaxed">Initially, optimization begins with a surge in curvature (up to ≈ 1.4), reflecting the rapid encoding of acoustic complexity from MFCC labels.</p>
                 </div>
                 <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
                     <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3"><i data-lucide="split" class="w-4 h-4 text-green-600"></i>Structural Separation</h3>
-                    <p class="text-slate-600 leading-relaxed">Early layers (0-40%) maintain high curvature for features, while deep layers undergo <strong>progressive relaxation</strong>.</p>
+                    <p class="text-slate-600 leading-relaxed">Early layers (0-40%) maintain high curvature to encode intricate features, while deeper layers begin to separate in regime.</p>
                 </div>
                 <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
-                    <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3"><i data-lucide="maximize" class="w-4 h-4 text-amber-600"></i>Linearization</h3>
-                    <p class="text-xs text-slate-600 leading-relaxed">The model actively <strong>"flattens"</strong> representations to facilitate linear separability in the final phase.</p>
+                    <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3"><i data-lucide="maximize" class="w-4 h-4 text-amber-600"></i>Deep Relaxation</h3>
+                    <p class="text-xs text-slate-600 leading-relaxed">Final layers (> 40%) undergo a systematic curvature drop, "flattening" representations to facilitate linear separability.</p>
                 </div>
             </div>
             <div class="lg:col-span-2 card-shadow rounded-[3rem] bg-white overflow-hidden p-4">
-                <div class="flex items-center justify-between mb-4 px-4 pt-2">
-                    <span class="text-[10px] uppercase font-bold text-slate-400 tracking-widest uppercase tracking-tighter">HuBERT Curvature Evolution</span>
-                </div>
                 <div class="chart-container-large relative bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden" style="height: 550px;">
-                    <iframe src="curvature_steps_smooth_colors.html" class="plotly-iframe" title="Geometric Relaxation"></iframe>
+                    <iframe src="curvature_steps_smooth_colors.html" class="plotly-iframe"></iframe>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CLPM Multi-Objective Analysis (4 Matrices) -->
+    <!-- CLPM Multi-Objective Analysis -->
     <section id="clpm-analysis" class="py-20 px-6 max-w-7xl mx-auto bg-slate-50 rounded-[3rem] my-12 border border-slate-200 overflow-hidden relative">
         <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-600/5 blur-[100px] rounded-full"></div>
         <div class="mb-12 text-center">
             <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM: Multi-Objective Analysis</h2>
-            <p class="text-slate-500 font-medium max-w-2xl mx-auto">Cross-Layer Performance Matrix for **Wav2Vec2**, evaluating how representations transfer across four distinct dimensions.</p>
+            <p class="text-slate-500 font-medium max-w-2xl mx-auto text-sm">Evaluating representational transferability for Wav2Vec2 across four key dimensions.</p>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
             <div class="lg:col-span-1 space-y-4">
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-cyan-500">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">1. Phonetic Consistency</h4>
-                    <p class="text-xs text-slate-500 text-slate-600">Stability observed in phoneme preservation across middle layers (4-9).</p>
+                    <p class="text-xs text-slate-500">Stable phonetic core observed across middle layers (4-9).</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-pink-500">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">2. Identity Volatility</h4>
-                    <p class="text-xs text-slate-500 text-slate-600">Speaker identity shows high volatility, often pruned in late-stage layers.</p>
+                    <p class="text-xs text-slate-500">Speaker identity is often discarded in deep layers to focus on linguistics.</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500">
-                    <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Features</h4>
-                    <p class="text-xs text-slate-500 text-slate-600">Pitch and energy transfer effectively between early and mid-range depths.</p>
+                    <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Robustness</h4>
+                    <p class="text-xs text-slate-500">Pitch features show effective transfer in the early network half.</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500">
-                    <h4 class="font-bold text-sm text-slate-900 mb-2">4. Semantic Rupture</h4>
-                    <p class="text-xs text-slate-500 text-slate-600">Sharp "functional rupture" near layer 11 for global semantic tasks.</p>
+                    <h4 class="font-bold text-sm text-slate-900 mb-2">4. Functional Rupture</h4>
+                    <p class="text-xs text-slate-500">Sharp semantic pruning occurs specifically at terminal layers.</p>
                 </div>
             </div>
-            <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2 min-h-[600px]">
+            <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2">
                 <div class="w-full h-[560px] rounded-[2.5rem] overflow-hidden relative border border-slate-50 bg-slate-50/10">
-                    <!-- LOADING SPINNER for CLPM Analysis -->
-                    <div x-show="loading.clpmAnalysis" 
-                         x-transition:leave="transition opacity duration-300"
-                         class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
+                    <div x-show="loading.clpmAnalysis" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
                         <div class="w-10 h-10 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
                         <p class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading Matrices...</p>
                     </div>
-                    <iframe src="cross_layer_evaluation.html" @load="loading.clpmAnalysis = false" class="plotly-iframe" title="CLPM Analysis"></iframe>
+                    <iframe src="cross_layer_evaluation.html" @load="loading.clpmAnalysis = false" class="plotly-iframe"></iframe>
                 </div>
             </div>
         </div>
     </section>
 
     <!-- CLPM Audio Matrix Explorer -->
-    <section id="clpm-audio" class="py-20 px-6 max-w-7xl mx-auto bg-white rounded-[4rem] my-12 border border-slate-200 overflow-hidden relative">
+    <section id="clpm-audio" class="py-20 px-6 max-w-7xl mx-auto bg-white rounded-[4rem] my-12 border border-slate-200 overflow-hidden relative shadow-inner">
         <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 text-center lg:text-left">
             <div class="max-w-xl">
                 <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM Matrix: Audio Explorer</h2>
-                <p class="text-slate-500 font-medium text-sm">Listen to decoded representations. Training layer <em>i</em> (rows) decodes eval layer <em>j</em> (cols).</p>
+                <p class="text-slate-500 font-medium text-sm">Listen to representations decoded from layer <em>i</em> using tokens from layer <em>j</em>.</p>
             </div>
             <div class="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-sm z-20">
                 <button @click="audioIndex = 0" :class="audioIndex === 0 ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-500'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Example 0</button>
@@ -435,7 +425,7 @@
                 <div class="p-6 bg-slate-50 card-shadow rounded-[2rem] border border-slate-100 min-h-[160px]">
                     <h4 class="font-bold text-xs text-slate-400 uppercase tracking-widest mb-4">Now Playing</h4>
                     <template x-if="playingCell">
-                        <div class="space-y-4">
+                        <div class="space-y-4 text-center">
                             <div class="flex justify-between text-[10px] font-mono font-bold text-slate-900">
                                 <span>TRAIN <span class="text-cyan-600" x-text="'L' + playingCell.i"></span></span>
                                 <span>EVAL <span class="text-pink-600" x-text="'L' + playingCell.j"></span></span>
@@ -458,14 +448,12 @@
 
             <div class="lg:col-span-9 card-shadow rounded-[3rem] bg-white p-8 lg:p-12 overflow-x-auto">
                 <div class="min-w-[650px] mx-auto">
-                    <!-- Column Header -->
                     <div class="clpm-grid-row mb-3">
                         <div class=""></div>
                         <template x-for="j in 13" :key="j-1">
                             <div class="text-[10px] font-black text-slate-300 text-center" x-text="j-1"></div>
                         </template>
                     </div>
-                    <!-- Matrix Content -->
                     <div class="flex flex-col gap-1.5">
                         <template x-for="i in 13" :key="i-1">
                             <div class="clpm-grid-row">
@@ -495,9 +483,9 @@
             <div class="max-w-2xl relative z-10">
                 <h2 class="text-4xl font-black mb-6 italic tracking-tighter uppercase leading-none">Open Source Code</h2>
                 <p class="text-slate-400 font-medium mb-8 leading-relaxed">
-                    The complete implementation of our analysis framework, including scripts for entropy calculation, curvature measurement, and the generative decoding for CLPM, is available on GitHub.
+                    The complete implementation of the CoGeR analysis framework is available on GitHub.
                 </p>
-                <a href="#" class="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-colors duration-300 group">
+                <a href="https://github.com/masked-authors/audio-ssl-dynamics-site/" target="_blank" class="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-colors duration-300 group shadow-xl">
                     <i data-lucide="github" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
                     Access Repository
                 </a>
@@ -511,7 +499,7 @@
             <div class="lg:col-span-4">
                 <h2 class="text-3xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase">Cite This Work</h2>
                 <p class="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
-                    If you find our results or the analytical framework useful in your research, please cite our paper.
+                    If you find the CoGeR framework useful in your research, please cite our paper.
                 </p>
                 <button @click="copyCitation()" class="flex items-center gap-2 text-cyan-600 text-xs font-bold hover:text-cyan-700 transition-colors uppercase tracking-widest">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i>
@@ -519,13 +507,13 @@
                 </button>
             </div>
             <div class="lg:col-span-8">
-                <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 overflow-x-auto">
-                    <pre id="bibtex-code" class="text-[13px] font-mono text-slate-600 leading-relaxed">@inproceedings{understanding_ssl_audio_2026,
-  title={Understanding SSL Audio Models: Compression, Geometry and Invariance},
-  author={Anonymous Authors}
+                <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 overflow-x-auto shadow-inner">
+                    <pre id="bibtex-code" class="text-[13px] font-mono text-slate-600 leading-relaxed">@inproceedings{coger_2026,
+  title={CoGeR: Compression, Geometry and Robustness to Understand Self-Supervised Speech Representations},
+  author={Anonymous Authors},
   <!-- booktitle={Proceedings of Interspeech 2026},
-  year={2026},
-  publisher={ISCA} -->
+  year={2026}, -->
+  <!-- publisher={ISCA} -->
 }</pre>
                 </div>
             </div>
