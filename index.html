@@ -3,13 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CoGeR: SSL Audio Model Dynamics</title>
+    <title>CoGeR</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- MathJax for LaTeX Rendering -->
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']]
+            },
+            svg: {
+                fontCache: 'global'
+            }
+        };
+    </script>
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Fira+Code:wght@400;500&display=swap');
@@ -49,7 +63,7 @@
         /* Matrix Styles */
         .clpm-grid-row {
             display: grid;
-            grid-template-columns: 35px repeat(13, 1fr);
+            grid-template-columns: 60px repeat(13, 1fr); /* Increased for math labels */
             gap: 6px;
             align-items: center;
         }
@@ -96,12 +110,11 @@
     <script>
         function dashboardApp() {
             return {
-                currentScale: '', // Start empty to trigger initial load in init()
+                currentScale: '', 
                 currentMetric: 'curvature', 
                 noiseLevel: 10,
                 pitchShift: 0,
                 
-                // Loading state for plots
                 loading: {
                     curvature: true,
                     entropy: true,
@@ -109,7 +122,6 @@
                     clpmAnalysis: true
                 },
 
-                // Audio Matrix State
                 audioIndex: 0, 
                 playingCell: null, 
                 audioPlayer: null,
@@ -126,8 +138,14 @@
                         this.initPlotly();
                         this.audioPlayer = new Audio();
                         this.audioPlayer.onended = () => { this.playingCell = null; };
-                        // Force first load of plots
                         this.currentScale = 'base';
+                        
+                        // Initial typeset for static LaTeX
+                        setTimeout(() => {
+                            if (window.MathJax && window.MathJax.typesetPromise) {
+                                window.MathJax.typesetPromise();
+                            }
+                        }, 500);
                     });
 
                     this.$watch('currentMetric', () => {
@@ -137,7 +155,6 @@
 
                 setScale(scale) {
                     if (this.currentScale === scale) return;
-                    // Reset all loading states because iframe srcs change
                     Object.keys(this.loading).forEach(k => {
                         if(k !== 'clpmAnalysis') this.loading[k] = true;
                     });
@@ -146,7 +163,6 @@
 
                 setMetric(metricId) {
                     if (this.currentMetric === metricId) return;
-                    // Trigger a brief visual loading state for the switch if it's already "loaded" in the current scale
                     if (!this.loading[metricId]) {
                         this.loading[metricId] = true;
                         setTimeout(() => { this.loading[metricId] = false; }, 400);
@@ -243,7 +259,7 @@
             Scientific Insights Dashboard
         </div>
         <h1 class="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900 max-w-5xl mx-auto">
-            <span class="gradient-text">CoGeR:</span> Compression, Geometry and Robustness to Understand Self-Supervised Speech Representations
+            <span class="gradient-text">CoGeR:</span> <span class="gradient-text">Co</span>mpression, <span class="gradient-text">Ge</span>ometry and <span class="gradient-text">R</span>obustness to Understand Self-Supervised Speech Representations
         </h1>
         <p class="text-slate-500 text-lg md:text-xl max-w-4xl mx-auto leading-relaxed">
             A task-agnostic framework for analyzing internal layer-wise dynamics of self-supervised Transformers.
@@ -288,8 +304,8 @@
     <section id="metrics" class="py-20 px-6 max-w-7xl mx-auto">
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-8">
             <div class="max-w-md">
-                <h2 class="text-3xl font-bold mb-2 text-slate-900 italic tracking-tight uppercase">Layer-wise Dynamics</h2>
-                <p class="text-slate-500 text-sm font-medium">Explore intrinsic perspectives through the CoGeR framework. Select model scale to trigger data loading.</p>
+                <h2 class="text-3xl font-bold mb-2 text-slate-900 italic tracking-tight uppercase text-sm">Layer-wise Dynamics</h2>
+                <p class="text-slate-500 text-sm font-medium">Explore intrinsic perspectives through the CoGeR framework.</p>
             </div>
             <div class="flex flex-col md:flex-row gap-6 w-full lg:w-auto">
                 <div class="space-y-2">
@@ -317,7 +333,7 @@
             <div class="absolute -top-32 -right-32 w-96 h-96 blur-[150px] rounded-full transition-all duration-1000" :class="{'bg-cyan-500/10': currentMetric === 'entropy', 'bg-green-500/10': currentMetric === 'curvature', 'bg-pink-500/10': currentMetric === 'invariance'}"></div>
             
             <div class="chart-container-large relative z-10 bg-slate-50/10 rounded-[2rem] border border-slate-50 overflow-hidden">
-                <!-- LOADING SPINNER Overlay -->
+                <!-- LOADING SPINNER -->
                 <div x-show="loading[currentMetric]" 
                      x-transition:enter="transition opacity duration-200" 
                      x-transition:leave="transition opacity duration-400"
@@ -326,7 +342,7 @@
                     <p class="mt-4 text-[11px] font-bold text-slate-500 uppercase tracking-[0.3em]">Processing Plotly Data...</p>
                 </div>
 
-                <!-- Plotly Iframes (Catching @load reliably) -->
+                <!-- Plotly Iframes -->
                 <div class="absolute inset-0 transition-opacity duration-500" :class="currentMetric === 'curvature' ? 'opacity-100 z-20' : 'opacity-0 z-10 pointer-events-none'">
                     <iframe x-show="currentScale !== ''" :src="currentScale === 'large' ? 'large_curvature_interactive.html' : 'curvature_interactive.html'" @load="loading.curvature = false" class="plotly-iframe"></iframe>
                 </div>
@@ -340,7 +356,7 @@
         </div>
     </section>
 
-    <!-- HuBERT Training Dynamics Section -->
+    <!-- Training Dynamics Section -->
     <section id="impact" class="py-12 px-6 max-w-7xl mx-auto border-t border-slate-50 pt-20">
         <div class="mb-10 text-center sm:text-left">
             <h2 class="text-3xl font-bold mb-4 text-slate-900 italic tracking-tight uppercase leading-none">Training Dynamics &<br>Geometric Relaxation</h2>
@@ -350,7 +366,7 @@
             <div class="lg:col-span-1 space-y-6 text-sm">
                 <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
                     <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3"><i data-lucide="zap" class="w-4 h-4 text-purple-600"></i>Rapid Encoding</h3>
-                    <p class="text-slate-600 leading-relaxed">Initially, optimization begins with a surge in curvature (up to ≈ 1.4), reflecting the rapid encoding of acoustic complexity from MFCC labels.</p>
+                    <p class="text-slate-600 leading-relaxed">Optimization begins with a surge in curvature (up to ≈ 1.4), reflecting the rapid encoding of acoustic complexity from MFCC labels.</p>
                 </div>
                 <div class="card-shadow p-6 rounded-3xl bg-slate-50 border-slate-100">
                     <h3 class="font-bold text-slate-900 flex items-center gap-2 mb-3"><i data-lucide="split" class="w-4 h-4 text-green-600"></i>Structural Separation</h3>
@@ -378,19 +394,19 @@
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
             <div class="lg:col-span-1 space-y-4">
-                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-cyan-500">
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-cyan-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">1. Phonetic Consistency</h4>
                     <p class="text-xs text-slate-500">Stable phonetic core observed across middle layers (4-9).</p>
                 </div>
-                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-pink-500">
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-pink-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">2. Identity Volatility</h4>
                     <p class="text-xs text-slate-500">Speaker identity is often discarded in deep layers to focus on linguistics.</p>
                 </div>
-                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500">
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Robustness</h4>
                     <p class="text-xs text-slate-500">Pitch features show effective transfer in the early network half.</p>
                 </div>
-                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500">
+                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">4. Functional Rupture</h4>
                     <p class="text-xs text-slate-500">Sharp semantic pruning occurs specifically at terminal layers.</p>
                 </div>
@@ -412,7 +428,7 @@
         <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 text-center lg:text-left">
             <div class="max-w-xl">
                 <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM Matrix: Audio Explorer</h2>
-                <p class="text-slate-500 font-medium text-sm">Listen to representations decoded from layer <em>i</em> using tokens from layer <em>j</em>.</p>
+                <p class="text-slate-500 font-medium text-sm">Listen to representations decoded from layer $D^{(i)}$ using tokens from layer $z^{(j)}$.</p>
             </div>
             <div class="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-sm z-20">
                 <button @click="audioIndex = 0" :class="audioIndex === 0 ? 'bg-cyan-600 text-white shadow-lg' : 'text-slate-500'" class="px-4 py-2 rounded-xl text-xs font-bold transition-all">Example 0</button>
@@ -427,8 +443,8 @@
                     <template x-if="playingCell">
                         <div class="space-y-4 text-center">
                             <div class="flex justify-between text-[10px] font-mono font-bold text-slate-900">
-                                <span>TRAIN <span class="text-cyan-600" x-text="'L' + playingCell.i"></span></span>
-                                <span>EVAL <span class="text-pink-600" x-text="'L' + playingCell.j"></span></span>
+                                <span>TRAIN <span class="text-cyan-600" x-text="'D^(' + playingCell.i + ')'"></span></span>
+                                <span>EVAL <span class="text-pink-600" x-text="'z^(' + playingCell.j + ')'"></span></span>
                             </div>
                             <div class="flex gap-1.5 items-center justify-center h-10">
                                 <div class="w-1.5 bg-cyan-400 h-6 rounded-full animate-bounce"></div>
@@ -440,7 +456,7 @@
                     <template x-if="!playingCell">
                         <div class="text-center py-4 opacity-30">
                             <i data-lucide="music" class="w-8 h-8 mx-auto mb-2"></i>
-                            <p class="text-[11px]">Select a cell</p>
+                            <p class="text-[11px]">Click/Select a cell</p>
                         </div>
                     </template>
                 </div>
@@ -448,16 +464,18 @@
 
             <div class="lg:col-span-9 card-shadow rounded-[3rem] bg-white p-8 lg:p-12 overflow-x-auto">
                 <div class="min-w-[650px] mx-auto">
+                    <!-- Matrix Grid Column Headers (X-axis) -->
                     <div class="clpm-grid-row mb-3">
                         <div class=""></div>
                         <template x-for="j in 13" :key="j-1">
-                            <div class="text-[10px] font-black text-slate-300 text-center" x-text="j-1"></div>
+                            <div class="text-[11px] font-bold text-slate-400 text-center" x-text="'$z^{(' + (j-1) + ')}$'"></div>
                         </template>
                     </div>
+                    <!-- Matrix Content (Y-axis indices + Cells) -->
                     <div class="flex flex-col gap-1.5">
                         <template x-for="i in 13" :key="i-1">
                             <div class="clpm-grid-row">
-                                <div class="text-[10px] font-black text-slate-300 text-right pr-2" x-text="i-1"></div>
+                                <div class="text-[11px] font-bold text-slate-400 text-right pr-2" x-text="'$D^{(' + (i-1) + ')}$'"></div>
                                 <template x-for="j in 13" :key="j-1">
                                     <div 
                                         @click="playCLPM(i-1, j-1)"
@@ -499,7 +517,7 @@
             <div class="lg:col-span-4">
                 <h2 class="text-3xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase">Cite This Work</h2>
                 <p class="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
-                    If you find the CoGeR framework useful in your research, please cite our paper.
+                    If you find the CoGeR framework useful in your research, please cite our Interspeech 2026 paper.
                 </p>
                 <button @click="copyCitation()" class="flex items-center gap-2 text-cyan-600 text-xs font-bold hover:text-cyan-700 transition-colors uppercase tracking-widest">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i>
@@ -512,8 +530,8 @@
   title={CoGeR: Compression, Geometry and Robustness to Understand Self-Supervised Speech Representations},
   author={Anonymous Authors},
   <!-- booktitle={Proceedings of Interspeech 2026},
-  year={2026}, -->
-  <!-- publisher={ISCA} -->
+  year={2026},
+  publisher={ISCA} -->
 }</pre>
                 </div>
             </div>
