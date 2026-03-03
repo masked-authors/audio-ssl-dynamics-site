@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InsideSSL: Understanding Self-Supervised Speech Representations</title>
+    <title>CoGeR</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -63,7 +63,7 @@
         /* Matrix Styles */
         .clpm-grid-row {
             display: grid;
-            grid-template-columns: 60px repeat(13, 1fr);
+            grid-template-columns: 60px repeat(13, 1fr); /* Increased for math labels */
             gap: 6px;
             align-items: center;
         }
@@ -140,6 +140,7 @@
                         this.audioPlayer.onended = () => { this.playingCell = null; };
                         this.currentScale = 'base';
                         
+                        // Initial typeset for static LaTeX
                         setTimeout(() => {
                             if (window.MathJax && window.MathJax.typesetPromise) {
                                 window.MathJax.typesetPromise();
@@ -238,7 +239,7 @@
             <div class="w-8 h-8 bg-cyan-600 rounded-lg flex items-center justify-center shadow-lg shadow-cyan-500/20">
                 <i data-lucide="waves" class="text-white w-5 h-5"></i>
             </div>
-            <span class="font-bold text-xl tracking-tight text-slate-900">InsideSSL <span class="text-slate-400 font-normal">Explorer</span></span>
+            <span class="font-bold text-xl tracking-tight text-slate-900">CoGeR <span class="text-slate-400 font-normal">Explorer</span></span>
         </div>
         <div class="hidden md:flex space-x-6 text-[13px] font-medium text-slate-500">
             <a href="#abstract" class="hover:text-cyan-600 transition">Abstract</a>
@@ -249,7 +250,7 @@
             <a href="#code-section" class="hover:text-cyan-600 transition">Code</a>
             <a href="#cite-section" class="hover:text-cyan-600 transition">Cite</a>
         </div>
-        <a href="#" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10 text-xs sm:text-sm">Full Paper</a>
+        <a href="#" class="bg-slate-900 text-white px-5 py-2 rounded-full text-sm font-semibold hover:bg-cyan-600 transition shadow-lg shadow-slate-900/10">Full Paper</a>
     </nav>
 
     <!-- Hero -->
@@ -258,7 +259,7 @@
             Scientific Insights Dashboard
         </div>
         <h1 class="text-3xl md:text-5xl font-extrabold mb-6 leading-tight text-slate-900 max-w-5xl mx-auto">
-            <span class="gradient-text">InsideSSL:</span> Understanding Self-Supervised Speech Representations using a Model-Centric Perspective
+            <span class="gradient-text">CoGeR:</span> <span class="gradient-text">Co</span>mpression, <span class="gradient-text">Ge</span>ometry and <span class="gradient-text">R</span>obustness to Understand Self-Supervised Speech Representations
         </h1>
         <p class="text-slate-500 text-lg md:text-xl max-w-4xl mx-auto leading-relaxed">
             A task-agnostic framework for analyzing internal layer-wise dynamics of self-supervised Transformers.
@@ -273,11 +274,11 @@
                 Scientific Abstract
             </h2>
             <p class="text-slate-600 leading-relaxed text-sm italic">
-                Self-supervised learning (SSL) models, such as Wav2Vec2, HuBERT, and WavLM, have become foundational across a wide range of speech and audio tasks. Despite their success, fully understanding their internal layer-wise dynamics remains an ongoing challenge. To address this, we propose a two-part model-centric analysis. First, we establish a task-agnostic framework from three intrinsic per-layer perspectives: compression (entropy), geometry (curvature), and robustness to perturbations. We show that varying training objectives induce distinct regimes of acoustic compression and manifold unfolding. Second, we introduce the Cross-Layer Performance Matrix (CLPM) to evaluate functional transferability across layers, exposing stable phonetic cores, identity volatility, and deep-layer semantic pruning. Finally, linear probing connects the model-centric perspective to downstream tasks, demonstrating how layer topology dictates phoneme, pitch, and speaker encoding.
+                Self-supervised learning (SSL) models, such as Wav2Vec2, HuBERT, and WavLM, have become foundational across a wide range of speech and audio tasks. However, despite their widespread success, fully understanding their internal layer-wise dynamics remains an ongoing challenge. To address this, we propose a three-part analysis of their representations. First, we establish a task-agnostic framework (CoGeR) analyzing the models from three intrinsic perspectives: compression (entropy), geometry (curvature), and robustness (invariance to perturbations). We show that different training objectives induce distinct regimes of acoustic compression and manifold unfolding. Second, we introduce the Cross-Layer Performance Matrix (CLPM) to evaluate functional transferability across layers, exposing stable phonetic cores, identity volatility, and deep-layer semantic pruning. Finally, linear probing connects the CoGeR metrics to downstream tasks, demonstrating how layer topology dictates phoneme, pitch, and speaker encoding.
             </p>
             <div class="mt-6 flex items-center gap-2 text-xs font-semibold text-cyan-700">
                 <i data-lucide="link" class="w-3.5 h-3.5"></i>
-                Project page and code: <a href="https://inside-ssl.github.io/" target="_blank" class="underline hover:text-cyan-900 transition font-mono">https://inside-ssl.github.io/</a>
+                Project page and code: <a href="https://coger.github.io/" target="_blank" class="underline hover:text-cyan-900 transition">https://coger.github.io/</a>
             </div>
         </div>
         <div class="bg-slate-50 border border-slate-200 p-8 rounded-3xl flex flex-col justify-center">
@@ -285,7 +286,7 @@
             <ul class="space-y-4 text-xs text-slate-500">
                 <li class="flex gap-2">
                     <span class="text-cyan-600 font-bold">I.</span>
-                    <span><strong>Task-Agnostic Framework:</strong> Multi-perspective analysis via entropy, curvature, and invariance metrics.</span>
+                    <span><strong>CoGeR Framework:</strong> Task-agnostic analysis via entropy, curvature, and invariance metrics.</span>
                 </li>
                 <li class="flex gap-2">
                     <span class="text-cyan-600 font-bold">II.</span>
@@ -293,7 +294,7 @@
                 </li>
                 <li class="flex gap-2">
                     <span class="text-cyan-600 font-bold">III.</span>
-                    <span><strong>Downstream Connection:</strong> Linking model-centric topology to specific encoding capabilities.</span>
+                    <span><strong>Topology vs Task:</strong> Linking intrinsic geometry to specific downstream encoding capabilities.</span>
                 </li>
             </ul>
         </div>
@@ -304,7 +305,7 @@
         <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end mb-8 gap-8">
             <div class="max-w-md">
                 <h2 class="text-3xl font-bold mb-2 text-slate-900 italic tracking-tight uppercase text-sm">Layer-wise Dynamics</h2>
-                <p class="text-slate-500 text-sm font-medium">Explore intrinsic perspectives through the InsideSSL framework.</p>
+                <p class="text-slate-500 text-sm font-medium">Explore intrinsic perspectives through the CoGeR framework.</p>
             </div>
             <div class="flex flex-col md:flex-row gap-6 w-full lg:w-auto">
                 <div class="space-y-2">
@@ -355,7 +356,7 @@
         </div>
     </section>
 
-    <!-- HuBERT Training Dynamics Section -->
+    <!-- Training Dynamics Section -->
     <section id="impact" class="py-12 px-6 max-w-7xl mx-auto border-t border-slate-50 pt-20">
         <div class="mb-10 text-center sm:text-left">
             <h2 class="text-3xl font-bold mb-4 text-slate-900 italic tracking-tight uppercase leading-none">Training Dynamics &<br>Geometric Relaxation</h2>
@@ -500,9 +501,9 @@
             <div class="max-w-2xl relative z-10">
                 <h2 class="text-4xl font-black mb-6 italic tracking-tighter uppercase leading-none">Open Source Code</h2>
                 <p class="text-slate-400 font-medium mb-8 leading-relaxed">
-                    The complete implementation of the InsideSSL analysis framework is available on GitHub.
+                    The complete implementation of the CoGeR analysis framework is available on GitHub.
                 </p>
-                <a href="https://github.com/inside-ssl/inside-ssl-site" target="_blank" class="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-colors duration-300 group shadow-xl">
+                <a href="https://github.com/masked-authors/audio-ssl-dynamics-site/" target="_blank" class="inline-flex items-center gap-3 bg-white text-slate-900 px-8 py-4 rounded-2xl font-bold hover:bg-cyan-400 transition-colors duration-300 group shadow-xl">
                     <i data-lucide="github" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
                     Access Repository
                 </a>
@@ -516,7 +517,7 @@
             <div class="lg:col-span-4">
                 <h2 class="text-3xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase">Cite This Work</h2>
                 <p class="text-slate-500 text-sm leading-relaxed mb-6 font-medium">
-                    If you find the InsideSSL framework useful in your research, please cite our paper.
+                    If you find the CoGeR framework useful in your research, please cite our paper.
                 </p>
                 <button @click="copyCitation()" class="flex items-center gap-2 text-cyan-600 text-xs font-bold hover:text-cyan-700 transition-colors uppercase tracking-widest">
                     <i data-lucide="copy" class="w-3.5 h-3.5"></i>
@@ -525,10 +526,12 @@
             </div>
             <div class="lg:col-span-8">
                 <div class="bg-slate-50 rounded-3xl p-8 border border-slate-100 overflow-x-auto shadow-inner">
-                    <pre id="bibtex-code" class="text-[13px] font-mono text-slate-600 leading-relaxed">@inproceedings{insidessl_2026,
-  title={InsideSSL: Understanding Self-Supervised Speech Representations using a Model-Centric Perspective},
+                    <pre id="bibtex-code" class="text-[13px] font-mono text-slate-600 leading-relaxed">@inproceedings{coger_2026,
+  title={CoGeR: Compression, Geometry and Robustness to Understand Self-Supervised Speech Representations},
   author={Anonymous Authors},
-  year={2026}
+  <!-- booktitle={Proceedings of Interspeech 2026},
+  year={2026},
+  publisher={ISCA} -->
 }</pre>
                 </div>
             </div>
@@ -538,7 +541,7 @@
     <!-- Footer -->
     <footer class="py-16 border-t border-slate-100 text-center px-6">
         <div class="text-slate-400 text-[10px] uppercase font-black tracking-[0.3em]">
-            InsideSSL Model-Centric Explorer © 2026
+            Audio SSL Dynamics Explorer © 2026
         </div>
     </footer>
 
