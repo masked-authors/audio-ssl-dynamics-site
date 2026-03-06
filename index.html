@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>InsideSSL: Understanding Self-Supervised Speech Representations</title>
+    <title>InsideSSL: Understanding Self-Supervised Speech Representations using a Model-Centric Perspective</title>
     
     <!-- Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -61,14 +61,14 @@
         }
 
         /* Matrix Styles */
-        .clpm-grid-row {
+        .gcm-grid-row {
             display: grid;
             grid-template-columns: 60px repeat(13, 1fr);
             gap: 6px;
             align-items: center;
         }
 
-        .clpm-cell {
+        .gcm-cell {
             aspect-ratio: 1;
             cursor: pointer;
             transition: all 0.2s ease-in-out;
@@ -76,14 +76,14 @@
             border: 1px solid rgba(0,0,0,0.05);
         }
 
-        .clpm-cell:hover {
+        .gcm-cell:hover {
             transform: scale(1.2);
             z-index: 40;
             box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
             border-color: rgba(8, 145, 178, 0.3);
         }
 
-        .clpm-cell.playing {
+        .gcm-cell.playing {
             background-color: #0891b2 !important;
             transform: scale(1.1);
             box-shadow: 0 0 15px rgba(8, 145, 178, 0.4);
@@ -119,7 +119,7 @@
                     curvature: true,
                     entropy: true,
                     invariance: true,
-                    clpmAnalysis: true
+                    gcmAnalysis: true
                 },
 
                 audioIndex: 0, 
@@ -155,7 +155,7 @@
                 setScale(scale) {
                     if (this.currentScale === scale) return;
                     Object.keys(this.loading).forEach(k => {
-                        if(k !== 'clpmAnalysis') this.loading[k] = true;
+                        if(k !== 'gcmAnalysis') this.loading[k] = true;
                     });
                     this.currentScale = scale;
                 },
@@ -169,8 +169,9 @@
                     this.currentMetric = metricId;
                 },
 
-                playCLPM(i, j) {
-                    const filePath = `CLPM-audio/${i}/${i}_${j}_${this.audioIndex}_rec.wav`;
+                playGCM(i, j) {
+                    // Path follows the GCM-audio structure
+                    const filePath = `GCM-audio/${i}/${i}_${j}_${this.audioIndex}_rec.wav`;
                     if (this.playingCell && this.playingCell.i === i && this.playingCell.j === j) {
                         this.audioPlayer.pause();
                         this.playingCell = null;
@@ -244,8 +245,8 @@
             <a href="#abstract" class="hover:text-cyan-600 transition">Abstract</a>
             <a href="#metrics" class="hover:text-cyan-600 transition">Metrics</a>
             <a href="#impact" class="hover:text-cyan-600 transition">Training</a>
-            <a href="#clpm-analysis" class="hover:text-cyan-600 transition">CLPM</a>
-            <a href="#clpm-audio" class="hover:text-cyan-600 transition">Audio Matrix</a>
+            <a href="#gcm-analysis" class="hover:text-cyan-600 transition">GCM</a>
+            <a href="#gcm-audio" class="hover:text-cyan-600 transition">Audio Matrix</a>
             <a href="#code-section" class="hover:text-cyan-600 transition">Code</a>
             <a href="#cite-section" class="hover:text-cyan-600 transition">Cite</a>
         </div>
@@ -273,7 +274,7 @@
                 Scientific Abstract
             </h2>
             <p class="text-slate-600 leading-relaxed text-sm italic">
-                Self-supervised learning (SSL) models, such as Wav2Vec2, HuBERT, and WavLM, have become foundational across a wide range of speech and audio tasks. Despite their success, fully understanding their internal layer-wise dynamics remains an ongoing challenge. To address this, we propose a two-part model-centric analysis. First, we establish a task-agnostic framework from three intrinsic per-layer perspectives: compression (entropy), geometry (curvature), and robustness to perturbations. We show that varying training objectives induce distinct regimes of acoustic compression and manifold unfolding. Second, we introduce the Cross-Layer Performance Matrix (CLPM) to evaluate functional transferability across layers, exposing stable phonetic cores, identity volatility, and deep-layer semantic pruning. Finally, linear probing connects the model-centric perspective to downstream tasks, demonstrating how layer topology dictates phoneme, pitch, and speaker encoding.
+                Self-supervised learning (SSL) models, such as Wav2Vec2, HuBERT, and WavLM, have become foundational across a wide range of speech and audio tasks. Despite their success, fully understanding their internal layer-wise dynamics remains an ongoing challenge. To address this, we propose a two-part model-centric analysis. First, we establish a task-agnostic framework from three intrinsic per-layer perspectives: compression (entropy), geometry (curvature), and robustness to perturbations. We show that varying training objectives induce distinct regimes of acoustic compression and manifold unfolding. Second, we introduce the Generative Compatibility Matrix (GCM) to evaluate functional transferability across layers, exposing stable phonetic cores, identity volatility, and deep-layer semantic pruning. Finally, linear probing connects the model-centric perspective to downstream tasks, demonstrating how layer topology dictates phoneme, pitch, and speaker encoding.
             </p>
             <div class="mt-6 flex items-center gap-2 text-xs font-semibold text-cyan-700">
                 <i data-lucide="link" class="w-3.5 h-3.5"></i>
@@ -289,7 +290,7 @@
                 </li>
                 <li class="flex gap-2">
                     <span class="text-cyan-600 font-bold">II.</span>
-                    <span><strong>Functional Transfer:</strong> Using CLPM to expose representational shifts and pruning zones.</span>
+                    <span><strong>Functional Transfer:</strong> Using GCM to expose representational shifts and pruning zones.</span>
                 </li>
                 <li class="flex gap-2">
                     <span class="text-cyan-600 font-bold">III.</span>
@@ -384,49 +385,49 @@
         </div>
     </section>
 
-    <!-- CLPM Multi-Objective Analysis -->
-    <section id="clpm-analysis" class="py-20 px-6 max-w-7xl mx-auto bg-slate-50 rounded-[3rem] my-12 border border-slate-200 overflow-hidden relative">
+    <!-- GCM Multi-Objective Analysis -->
+    <section id="gcm-analysis" class="py-20 px-6 max-w-7xl mx-auto bg-slate-50 rounded-[3rem] my-12 border border-slate-200 overflow-hidden relative">
         <div class="absolute top-0 right-0 w-64 h-64 bg-cyan-600/5 blur-[100px] rounded-full"></div>
         <div class="mb-12 text-center">
-            <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM: Multi-Objective Analysis</h2>
+            <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none text-sm sm:text-4xl">GCM: Generative Compatibility Matrix</h2>
             <p class="text-slate-500 font-medium max-w-2xl mx-auto text-sm">Evaluating representational transferability for Wav2Vec2 across four key dimensions.</p>
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
             <div class="lg:col-span-1 space-y-4">
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-cyan-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">1. Phonetic Consistency</h4>
-                    <p class="text-xs text-slate-500">Stable phonetic core observed across middle layers (4-9).</p>
+                    <p class="text-xs text-slate-500">Stable phonetic core observed across middle layers (1-10).</p>
                 </div>
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-pink-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">2. Identity Volatility</h4>
                     <p class="text-xs text-slate-500">Speaker identity is often discarded in deep layers to focus on linguistics.</p>
                 </div>
-                <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500 shadow-sm">
+                <!-- <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-amber-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">3. Prosodic Robustness</h4>
                     <p class="text-xs text-slate-500">Pitch features show effective transfer in the early network half.</p>
-                </div>
+                </div> -->
                 <div class="p-5 bg-white card-shadow rounded-2xl border-l-4 border-purple-500 shadow-sm">
                     <h4 class="font-bold text-sm text-slate-900 mb-2">4. Functional Rupture</h4>
-                    <p class="text-xs text-slate-500">Sharp semantic pruning occurs specifically at terminal layers.</p>
+                    <p class="text-xs text-slate-500">Sharp semantic pruning occurs specifically at terminal layers (layer 11).</p>
                 </div>
             </div>
             <div class="lg:col-span-3 card-shadow rounded-[3rem] bg-white overflow-hidden p-2">
                 <div class="w-full h-[560px] rounded-[2.5rem] overflow-hidden relative border border-slate-50 bg-slate-50/10">
-                    <div x-show="loading.clpmAnalysis" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
+                    <div x-show="loading.gcmAnalysis" class="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/60 backdrop-blur-sm">
                         <div class="w-10 h-10 border-4 border-slate-200 border-t-cyan-600 rounded-full animate-spin-custom"></div>
                         <p class="mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">Loading Matrices...</p>
                     </div>
-                    <iframe src="cross_layer_evaluation.html" @load="loading.clpmAnalysis = false" class="plotly-iframe"></iframe>
+                    <iframe src="cross_layer_evaluation.html" @load="loading.gcmAnalysis = false" class="plotly-iframe"></iframe>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- CLPM Audio Matrix Explorer -->
-    <section id="clpm-audio" class="py-20 px-6 max-w-7xl mx-auto bg-white rounded-[4rem] my-12 border border-slate-200 overflow-hidden relative shadow-inner">
+    <!-- GCM Audio Matrix Explorer -->
+    <section id="gcm-audio" class="py-20 px-6 max-w-7xl mx-auto bg-white rounded-[4rem] my-12 border border-slate-200 overflow-hidden relative shadow-inner">
         <div class="mb-12 flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 text-center lg:text-left">
             <div class="max-w-xl">
-                <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none">CLPM Matrix: Audio Explorer</h2>
+                <h2 class="text-4xl font-black mb-4 text-slate-900 italic tracking-tighter uppercase leading-none text-sm sm:text-4xl">GCM Matrix: Audio Explorer</h2>
                 <p class="text-slate-500 font-medium text-sm">Listen to representations decoded from layer $D^{(i)}$ using tokens from layer $z^{(j)}$.</p>
             </div>
             <div class="flex bg-slate-50 p-1.5 rounded-2xl border border-slate-200 shadow-sm z-20">
@@ -464,7 +465,7 @@
             <div class="lg:col-span-9 card-shadow rounded-[3rem] bg-white p-8 lg:p-12 overflow-x-auto">
                 <div class="min-w-[650px] mx-auto">
                     <!-- Matrix Grid Column Headers (X-axis) -->
-                    <div class="clpm-grid-row mb-3">
+                    <div class="gcm-grid-row mb-3">
                         <div class=""></div>
                         <template x-for="j in 13" :key="j-1">
                             <div class="text-[11px] font-bold text-slate-400 text-center" x-text="'$z^{(' + (j-1) + ')}$'"></div>
@@ -473,15 +474,15 @@
                     <!-- Matrix Content (Y-axis indices + Cells) -->
                     <div class="flex flex-col gap-1.5">
                         <template x-for="i in 13" :key="i-1">
-                            <div class="clpm-grid-row">
+                            <div class="gcm-grid-row">
                                 <div class="text-[11px] font-bold text-slate-400 text-right pr-2" x-text="'$D^{(' + (i-1) + ')}$'"></div>
                                 <template x-for="j in 13" :key="j-1">
                                     <div 
-                                        @click="playCLPM(i-1, j-1)"
+                                        @click="playGCM(i-1, j-1)"
                                         :class="[
                                             (playingCell && playingCell.i === i-1 && playingCell.j === j-1) ? 'playing' : 
                                             (i-1 === j-1 ? 'bg-slate-200' : 'bg-slate-50'),
-                                            'clpm-cell'
+                                            'gcm-cell'
                                         ]"
                                     ></div>
                                 </template>
@@ -498,7 +499,7 @@
         <div class="card-shadow rounded-[3rem] p-12 bg-slate-900 text-white relative overflow-hidden">
             <div class="absolute top-0 right-0 w-96 h-96 bg-cyan-500/10 blur-[100px] rounded-full"></div>
             <div class="max-w-2xl relative z-10">
-                <h2 class="text-4xl font-black mb-6 italic tracking-tighter uppercase leading-none">Open Source Code</h2>
+                <h2 class="text-4xl font-black mb-6 italic tracking-tighter uppercase leading-none text-sm sm:text-4xl">Open Source Code</h2>
                 <p class="text-slate-400 font-medium mb-8 leading-relaxed">
                     The complete implementation of the InsideSSL analysis framework is available on GitHub.
                 </p>
